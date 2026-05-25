@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nani Systems</title>
+  
+  <!-- Premium fonts for motherboard BIOS / Full Stack Dev experience -->
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase Classic SDK compat libraries -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #020617;
+  color: white;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ==========================================================================
+   SPLASH SCREEN DESIGN (MOTHERBOARD & CPU CORE STYLING)
+   ========================================================================== */
+#splash {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #0b1120 0%, #030712 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), visibility 1s;
+}
+
+#splash.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Motherboard grid lines overlay */
+.pcb-grid {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background-image: 
+    linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Interactive circuitry canvas */
+#circuit-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: all;
+}
+
+/* MOTHERBOARD HARDWARE DECORATIONS */
+.motherboard-decor {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.45;
+}
+
+/* RAM Channels */
+.ram-channels {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 180px);
+  transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+}
+.ram-slot {
+  width: 6px;
+  height: 180px;
+  background: linear-gradient(180deg, #15223c, #0a1120);
+  border: 1px solid rgba(0, 243, 255, 0.25);
+  border-radius: 2px;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+}
+.ram-slot::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  bottom: 15px;
+  left: 1px;
+  right: 1px;
+  background: repeating-linear-gradient(180deg, #00f3ff 0px, #00f3ff 2px, transparent 2px, transparent 6px);
+  opacity: 0.65;
+}
+.ram-slot:nth-child(even)::after {
+  background: repeating-linear-gradient(180deg, #b84dff 0px, #b84dff 2px, transparent 2px, transparent 6px);
+}
+
+/* Heatsinks */
+.heatsink {
+  position: absolute;
+  top: calc(50% - 240px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 38px;
+  background: linear-gradient(90deg, #162447, #1f4068, #162447);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-around;
+  padding: 4px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.1);
+}
+.heatsink-fin {
+  width: 4px;
+  height: 100%;
+  background: #080c14;
+  border-radius: 1px;
+}
+
+/* Dynamic Capacitors surrounding the CPU Socket */
+.capacitors {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.capacitor {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffd700 0%, #8b6508 100%);
+  border: 1px solid #05070a;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.8), 0 3px 6px rgba(0,0,0,0.6);
+}
+.cap-1 { top: -15px; left: 40px; }
+.cap-2 { top: -15px; left: 130px; }
+.cap-3 { top: -15px; left: 220px; }
+.cap-4 { bottom: -15px; left: 60px; }
+.cap-5 { bottom: -15px; left: 180px; }
+.cap-6 { top: 60px; left: -15px; }
+.cap-7 { top: 160px; left: -15px; }
+.cap-8 { top: 100px; right: -15px; }
+
+/* THE MICROPROCESSOR (CPU SOCKET) */
+.cpu-socket {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, #0e1424 0%, #04070f 100%);
+  border: 4px solid #1e293b;
+  border-radius: 14px;
+  box-shadow: 
+    0 0 50px rgba(0, 243, 255, 0.15), 
+    0 20px 40px rgba(0, 0, 0, 0.7),
+    inset 0 0 25px rgba(0,0,0,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: cpu-hover 6s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes cpu-hover {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.015); }
+}
+
+/* Gold Pin Headers around Socket */
+.cpu-pins-north, .cpu-pins-south {
+  position: absolute;
+  width: 200px;
+  height: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+.cpu-pins-north { top: -6px; }
+.cpu-pins-south { bottom: -6px; }
+
+.cpu-pins-east, .cpu-pins-west {
+  position: absolute;
+  width: 6px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.cpu-pins-east { right: -6px; }
+.cpu-pins-west { left: -6px; }
+
+.pin {
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, #ffd700 0%, #8b6508 100%);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+/* CPU Package Chip */
+.cpu-chip {
+  width: 176px;
+  height: 176px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 3px solid #ffd700;
+  border-radius: 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 12px;
+  box-shadow: 
+    0 10px 30px rgba(0,0,0,0.8),
+    inset 0 0 15px rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+
+.cpu-chip::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 40%, rgba(0, 243, 255, 0.15) 50%, transparent 60%);
+  animation: metallic-shine 4s infinite linear;
+}
+
+@keyframes metallic-shine {
+  0% { transform: translate(-30%, -30%); }
+  100% { transform: translate(30%, 30%); }
+}
+
+.cpu-brand {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #ffd700;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+}
+
+.cpu-model {
+  font-family: 'Fira Code', monospace;
+  font-size: 8px;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+/* Central glowing hologram animation */
+.cpu-hologram {
+  position: relative;
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  animation: rotateRing 4s linear infinite;
+}
+.ring-1 {
+  width: 100%;
+  height: 100%;
+  border-top-color: #00f3ff;
+  border-bottom-color: #00f3ff;
+  animation-duration: 2.5s;
+}
+.ring-2 {
+  width: 75%;
+  height: 75%;
+  border-left-color: #b84dff;
+  border-right-color: #b84dff;
+  animation-duration: 3.5s;
+  animation-direction: reverse;
+}
+.ring-3 {
+  width: 50%;
+  height: 50%;
+  border-top-color: #ffd700;
+  border-bottom-color: #ffd700;
+  animation-duration: 1.8s;
+}
+.core-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #00f3ff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #00f3ff, 0 0 24px #00f3ff;
+  animation: core-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes rotateRing {
+  to { transform: rotate(360deg); }
+}
+@keyframes core-pulse {
+  to { transform: scale(1.3); opacity: 0.6; }
+}
+
+.cpu-specs {
+  font-family: 'Fira Code', monospace;
+  font-size: 8px;
+  color: #38bdf8;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* BIOS TERMINAL LOG */
+.boot-terminal {
+  width: 440px;
+  height: 140px;
+  background: rgba(3, 7, 18, 0.88);
+  border: 1px solid rgba(0, 243, 255, 0.15);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 35px;
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.6),
+    0 0 25px rgba(0, 243, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: #38bdf8;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+.terminal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.terminal-dot.red { background: #ef4444; }
+.terminal-dot.yellow { background: #f59e0b; }
+.terminal-dot.green { background: #10b981; }
+.terminal-title {
+  color: #64748b;
+  font-size: 9px;
+  letter-spacing: 1px;
+  margin-left: 5px;
+}
+.terminal-content {
+  flex: 1;
+  overflow-y: auto;
+  line-height: 1.4;
+  scrollbar-width: none;
+}
+.terminal-content::-webkit-scrollbar {
+  display: none;
+}
+.log-line {
+  margin-bottom: 2px;
+  opacity: 0.95;
+  white-space: nowrap;
+}
+.log-success { color: #34d399; }
+.log-warning { color: #fbbf24; }
+.log-info { color: #60a5fa; }
+
+/* DYNAMIC STATUS BAR LOADING */
+.system-loader-container {
+  width: 360px;
+  margin-top: 25px;
+  z-index: 10;
+}
+.loader-status {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+.loader-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.loader-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #00f3ff, #b84dff);
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.6);
+  border-radius: 3px;
+  transition: width 0.1s ease-out;
+}
+
+
+/* ==========================================================================
+   AUTHENTICATION INTERFACE (PREMIUM GLASSMORPHISM LOG IN CARD)
+   ========================================================================== */
+#auth {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Detailed backdrop matrix overlay for login */
+#auth::before {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background-image: 
+    linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+  transform: rotate(15deg);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.auth-box {
+  width: 380px;
+  padding: 40px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(0, 243, 255, 0.02),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 10;
+  transform: translateY(0);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s;
+}
+
+.auth-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 30px 60px rgba(0, 0, 0, 0.6),
+    0 0 55px rgba(184, 77, 255, 0.06),
+    inset 0 1px 2px rgba(255, 255, 255, 0.15);
+}
+
+.auth-box h2 {
+  font-family: 'Orbitron', sans-serif;
+  margin-bottom: 25px;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, #00f3ff, #b84dff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
+  font-size: 24px;
+}
+
+.input-container {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  border-radius: 12px;
+  background: rgba(3, 7, 18, 0.4);
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.input:focus {
+  border-color: #00f3ff;
+  background: rgba(3, 7, 18, 0.75);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.25);
+}
+
+.btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #00f3ff, #b84dff);
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 243, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(184, 77, 255, 0.5);
+  background: linear-gradient(90deg, #00d4ff, #a83dff);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.switch {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.3s;
+  font-family: 'Inter', sans-serif;
+}
+
+.switch:hover {
+  color: #00f3ff;
+  text-decoration: underline;
+}
+
+/* Password Toggle HUD styling */
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #64748b;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  user-select: none;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+.password-toggle:hover {
+  color: #00f3ff;
+  text-shadow: 0 0 8px rgba(0, 243, 255, 0.4);
+}
+
+/* Authentic OR Divider Line */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 22px 0;
+  color: #64748b;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.auth-divider:not(:empty)::before {
+  margin-right: 12px;
+}
+
+.auth-divider:not(:empty)::after {
+  margin-left: 12px;
+}
+
+/* Google Brand Authentic Glass button */
+.google-btn {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  color: #cbd5e1;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 
+    0 4px 10px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255,255,255,0.05);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.google-btn:hover {
+  transform: translateY(-2px);
+  color: white;
+  border-color: rgba(0, 243, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.25),
+    0 0 15px rgba(0, 243, 255, 0.08);
+}
+
+.google-btn:active {
+  transform: translateY(1px);
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
+  </style>
+</head>
+
+<body>
+
+<!-- SPLASH SCREEN BOOT SYSTEM -->
+<div id="splash">
+  <!-- Dynamic circuit routing board -->
+  <canvas id="circuit-canvas"></canvas>
+  
+  <!-- Faint copper grid pattern overlay -->
+  <div class="pcb-grid"></div>
+
+  <!-- Decorative Motherboard Hardware Slots -->
+  <div class="motherboard-decor">
+    <!-- RAM Channels -->
+    <div class="ram-channels">
+      <div class="ram-slot"></div>
+      <div class="ram-slot"></div>
+      <div class="ram-slot"></div>
+      <div class="ram-slot"></div>
+    </div>
+    
+    <!-- Heatsink grill at the top -->
+    <div class="heatsink">
+      <div class="heatsink-fin"></div>
+      <div class="heatsink-fin"></div>
+      <div class="heatsink-fin"></div>
+      <div class="heatsink-fin"></div>
+      <div class="heatsink-fin"></div>
+      <div class="heatsink-fin"></div>
+      <div class="heatsink-fin"></div>
+      <div class="heatsink-fin"></div>
+    </div>
+
+    <!-- Radial Solder Capacitors bordering CPU -->
+    <div class="capacitors">
+      <div class="capacitor cap-1"></div>
+      <div class="capacitor cap-2"></div>
+      <div class="capacitor cap-3"></div>
+      <div class="capacitor cap-4"></div>
+      <div class="capacitor cap-5"></div>
+      <div class="capacitor cap-6"></div>
+      <div class="capacitor cap-7"></div>
+      <div class="capacitor cap-8"></div>
+    </div>
+  </div>
+
+  <!-- Central Processor Socket Unit -->
+  <div class="cpu-socket">
+    <!-- Bordering Gold PGA/LGA Grid pins -->
+    <div class="cpu-pins-north"></div>
+    <div class="cpu-pins-south"></div>
+    <div class="cpu-pins-east"></div>
+    <div class="cpu-pins-west"></div>
+    
+    <!-- CPU Chip Body -->
+    <div class="cpu-chip">
+      <div class="cpu-brand">Nani Systems</div>
+      <div class="cpu-model">CORE_i9_FULLSTACK</div>
+      
+      <!-- Pulsing Hologram core loader -->
+      <div class="cpu-hologram">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <div class="core-dot"></div>
+      </div>
+      
+      <div class="cpu-specs">
+        <span>V8.NODE</span>
+        <span>•</span>
+        <span>HTML.CSS.DB</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Boot Diagnostic POST Terminal -->
+  <div class="boot-terminal">
+    <div class="terminal-header">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">NANI BIOS CORE v4.26 POST</span>
+    </div>
+    <div class="terminal-content" id="terminal-log">
+      <!-- Generated via JS diagnostics cascade -->
+    </div>
+  </div>
+
+  <!-- real-time progress loading bar -->
+  <div class="system-loader-container">
+    <div class="loader-status">
+      <span id="loader-label">DETECTING BIOS ENGINE...</span>
+      <span id="loader-percentage">0%</span>
+    </div>
+    <div class="loader-bar-bg">
+      <div class="loader-bar-fill" id="loader-fill"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CREDENTIALS AUTHORIZATION HUB -->
+<div id="auth">
+  <div class="auth-box">
+    <h2 id="title">Login</h2>
+
+    <div class="input-container">
+      <input class="input" id="email" placeholder="Email">
+    </div>
+    
+    <div class="input-container">
+      <input class="input" id="password" type="password" placeholder="Password" style="padding-right: 60px;">
+      <span class="password-toggle" onclick="togglePasswordVisibility('password', this)">SHOW</span>
+    </div>
+
+    <!-- Confirm Password Input (Only shown on signup/register mode) -->
+    <div class="input-container" id="confirm-password-container" style="display: none;">
+      <input class="input" id="confirm-password" type="password" placeholder="Confirm Password" style="padding-right: 60px;">
+      <span class="password-toggle" onclick="togglePasswordVisibility('confirm-password', this)">SHOW</span>
+    </div>
+
+    <button class="btn" onclick="handleAuth()">Login</button>
+
+    <!-- Social Authentication Division -->
+    <div class="auth-divider">OR CONTINUE WITH</div>
+
+    <!-- Google login option -->
+    <button class="google-btn" onclick="handleGoogleAuth()">
+      <svg class="google-icon" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      <span>Continue with Google</span>
+    </button>
+
+    <div class="switch" onclick="toggleMode()" id="switchText">
+      Don't have an account? Sign Up
+    </div>
+  </div>
+</div>
+
+<!-- CORE SCRIPTS AND ANUMATIONS -->
+<!-- ========================= -->
+<!-- FIREBASE AUTH SDK -->
+<!-- PLACE THIS UNDER FIREBASE -->
+<!-- ========================= -->
+
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+
+<script>
+/* =========================
+   FIREBASE INIT
+========================= */
+
+const firebaseConfig = {
+    apiKey: "AIzaSyC0AuFmL0ENDjxIyX39_yyU5tEVykJ6LE0",
+    authDomain: "nani-systems-f50a6.firebaseapp.com",
+    projectId: "nani-systems-f50a6",
+    storageBucket: "nani-systems-f50a6.firebasestorage.app",
+    messagingSenderId: "635712683932",
+    appId: "1:635712683932:web:853bdfaa182e05a2455259"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+/* =========================
+   ADMIN EMAILS
+========================= */
+
+const ADMIN_EMAILS = [
+  "admin@nanisystems.co.za",
+  "siyabonganani9@gmail.com"
+];
+
+/* =========================
+   OPEN LOGIN POPUP
+========================= */
+
+function openLogin(type){
+
+  const popup = document.createElement("div");
+
+  popup.style = `
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.92);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:99999;
+  `;
+
+  popup.innerHTML = `
+    <div class="glass" style="
+      width:90%;
+      max-width:420px;
+      padding:25px;
+    ">
+
+      <h2 style="margin-bottom:20px;">
+        ${type === 'admin' ? 'Admin Login' : 'Client Login'}
+      </h2>
+
+      <input
+        type="email"
+        id="loginEmail"
+        placeholder="Email"
+        style="width:100%;padding:12px;margin:8px 0;border-radius:10px;border:none;"
+      >
+
+      <input
+        type="password"
+        id="loginPassword"
+        placeholder="Password"
+        style="width:100%;padding:12px;margin:8px 0;border-radius:10px;border:none;"
+      >
+
+      <button
+        class="btn"
+        style="width:100%;"
+        onclick="loginUser('${type}')"
+      >
+        Login
+      </button>
+
+      ${
+        type === 'client'
+        ?
+        `
+        <button
+          class="btn"
+          style="width:100%;margin-top:10px;"
+          onclick="registerClient()"
+        >
+          Create Client Account
+        </button>
+        `
+        :
+        ''
+      }
+
+      <button
+        class="btn"
+        style="width:100%;margin-top:10px;background:rgba(255,0,0,0.2);"
+        onclick="this.parentElement.parentElement.remove()"
+      >
+        Close
+      </button>
+
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+}
+
+/* =========================
+   CLIENT REGISTER
+========================= */
+
+async function registerClient(){
+
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+
+  if(!email || !password){
+    notify("⚠️ Fill all fields");
+    return;
+  }
+
+  try{
+
+    const userCredential =
+      await auth.createUserWithEmailAndPassword(email, password);
+
+    const user = userCredential.user;
+
+    await db.collection("users").doc(user.uid).set({
+      email,
+      role: "client",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    notify("✅ Client account created", "success");
+
+  }catch(err){
+    console.error(err);
+    notify(err.message, "error");
+  }
+}
+
+/* =========================
+   LOGIN SYSTEM
+========================= */
+
+async function loginUser(type){
+
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+
+  if(!email || !password){
+    notify("⚠️ Fill all fields");
+    return;
+  }
+
+  try{
+
+    const userCredential =
+      await auth.signInWithEmailAndPassword(email, password);
+
+    const user = userCredential.user;
+
+    /* =========================
+       ADMIN LOGIN
+    ========================= */
+
+    if(type === "admin"){
+
+      if(!ADMIN_EMAILS.includes(user.email)){
+
+        notify("❌ Not authorized as admin", "error");
+
+        auth.signOut();
+
+        return;
+      }
+
+      notify("✅ Admin login successful", "success");
+
+      window.location.href = "admin-dashboard.html";
+    }
+
+    /* =========================
+       CLIENT LOGIN
+    ========================= */
+
+    else{
+
+      notify("✅ Client login successful", "success");
+
+      window.location.href = "client-dashboard.html";
+    }
+
+  }catch(err){
+
+    console.error(err);
+
+    notify(err.message, "error");
+  }
+}
+
+/* =========================
+   LOGOUT
+========================= */
+
+async function logout(){
+
+  await auth.signOut();
+
+  notify("Logged out");
+
+  window.location.href = "index.html";
+}
+
+/* =========================
+   CHECK LOGIN STATE
+========================= */
+
+auth.onAuthStateChanged(async(user)=>{
+
+  if(user){
+
+    console.log("Logged in:", user.email);
+
+    const userDoc =
+      await db.collection("users").doc(user.uid).get();
+
+    if(userDoc.exists){
+
+      console.log(userDoc.data());
+    }
+
+  }else{
+
+    console.log("No user logged in");
+  }
+});
+</script>
+
+</body>
+</html>
